@@ -1,31 +1,45 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.json());
 
-const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+const SLACK_CHANNEL_ID = process.env.SLACK_CHANNEL_ID;
 
 app.post('/shopify-webhook', async (req, res) => {
     console.log('Received webhook payload:', req.body);
 
-    if (!req.body || !req.body.name) {
-        console.error('Received data does not include a theme object');
-        return res.status(400).send('Received data does not include a theme object');
+    const { id: store_id, name: theme_name, role: theme_role, updated_at } = req.body || {};
+
+    if (!store_id || !theme_name || !theme_role || !updated_at) {
+        console.error('Received data is missing required fields');
+        return res.status(400).send('Received data is missing required fields');
     }
 
-    const { id: store_id, name: theme_name, role: theme_role, updated_at } = req.body;
-
     const slackMessage = {
+        channel: SLACK_CHANNEL_ID,
         text: `Alert: The theme on store ID *${store_id}* has changed to *${theme_name}* with role *${theme_role}* as of *${updated_at}*.`,
     };
 
     try {
-        await axios.post(SLACK_WEBHOOK_URL, slackMessage);
-        res.status(200).send('Notification sent to Slack.');
+        const slackResponse = await axios.post('https://slack.com/api/chat.postMessage', slackMessage, {
+            headers: {
+                Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+        });
+        if (slackResponse.data.ok) {
+            console.log('Message sent to Slack successfully.');
+            res.status(200).send('Notification sent to Slack.');
+        } else {
+            console.error('Error sending to Slack:', slackResponse.data.error);
+            res.status(500).send('Error sending notification.');
+        }
     } catch (error) {
-        console.error('Error sending to Slack:', error);
+        console.error('Error sending to Slack:', error.response?.data || error.message);
         res.status(500).send('Error sending notification.');
     }
 });
