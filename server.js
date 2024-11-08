@@ -10,15 +10,15 @@ const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/T06CXJD4M5K/B0803A87
 app.post('/shopify-webhook', async (req, res) => {
     console.log('Received webhook payload:', req.body);
 
-    if (!req.body.theme) {
+    if (!req.body || !req.body.name) {
         console.error('Received data does not include a theme object');
         return res.status(400).send('Received data does not include a theme object');
     }
 
-    const { id: store_id, name: theme_name, role: theme_role } = req.body.theme;
+    const { id: store_id, name: theme_name, role: theme_role, updated_at } = req.body;
 
     const slackMessage = {
-        text: `Alert: The theme on store ID *${store_id}* has changed to *${theme_name}* with role *${theme_role}*.`,
+        text: `Alert: The theme on store ID *${store_id}* has changed to *${theme_name}* with role *${theme_role}* as of *${updated_at}*.`,
     };
 
     try {
