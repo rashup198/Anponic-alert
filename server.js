@@ -5,7 +5,7 @@ const axios = require('axios');
 const app = express();
 app.use(bodyParser.json());
 
-const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 
 app.post('/shopify-webhook', async (req, res) => {
     console.log('Received webhook payload:', req.body);
